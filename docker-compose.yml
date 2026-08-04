@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - LLM_BASE_URL=https://api.groq.com/openai/v1
+      - CHAT_MODEL=llama-3.3-70b-versatile
+      - IMAGE_API_KEY=${IMAGE_API_KEY:-}
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB_NAME=content_generator
+      - JWT_SECRET=${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - REDIS_URL=redis://redis:6379/0
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:4173
+    volumes:
+      - vector_store:/app/data/vector_store
+    depends_on:
+      - mongo
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "4173:80"
+    depends_on:
+      - backend
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongo_data:
+  vector_store:
